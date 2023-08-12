@@ -5,28 +5,24 @@ contributions:
     - id: napari-psf-extractor.get_reader
       python_name: napari_psf_extractor._reader:napari_get_reader
       title: Open data with PSF Extractor
+
     - id: napari-psf-extractor.write_multiple
       python_name: napari_psf_extractor._writer:write_multiple
       title: Save multi-layer data with PSF Extractor
+
     - id: napari-psf-extractor.write_single_image
       python_name: napari_psf_extractor._writer:write_single_image
       title: Save image data with PSF Extractor
+
     - id: napari-psf-extractor.make_sample_data
       python_name: napari_psf_extractor._sample_data:make_sample_data
       title: Load sample data from PSF Extractor
-    - id: napari-psf-extractor.make_qwidget
-      python_name: napari_psf_extractor._widget:ExampleQWidget
-      title: Make example QWidget
-    - id: napari-psf-extractor.make_magic_widget
-      python_name: napari_psf_extractor._widget:example_magic_widget
-      title: Make example magic widget
-    - id: napari-psf-extractor.make_func_widget
-      python_name: napari_psf_extractor._widget:example_function_widget
-      title: Make example function widget
+
   readers:
     - command: napari-psf-extractor.get_reader
       accepts_directories: false
       filename_patterns: ['*.npy']
+
   writers:
     - command: napari-psf-extractor.write_multiple
       layer_types: ['image*','labels*']
@@ -34,15 +30,8 @@ contributions:
     - command: napari-psf-extractor.write_single_image
       layer_types: ['image']
       filename_extensions: ['.npy']
+
   sample_data:
     - command: napari-psf-extractor.make_sample_data
       display_name: PSF Extractor
       key: unique_id.1
-  widgets:
-    - command: napari-psf-extractor.make_qwidget
-      display_name: Example QWidget
-    - command: napari-psf-extractor.make_magic_widget
-      display_name: Example Magic Widget
-    - command: napari-psf-extractor.make_func_widget
-      autogenerate: true
-      display_name: Example Function Widget
