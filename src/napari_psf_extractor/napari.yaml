@@ -14,9 +14,9 @@ contributions:
       python_name: napari_psf_extractor._writer:write_single_image
       title: Save image data with PSF Extractor
 
-    - id: napari-psf-extractor.make_sample_data
-      python_name: napari_psf_extractor._sample_data:make_sample_data
-      title: Load sample data from PSF Extractor
+    - id: napari-psf-extractor.psf_widget
+      python_name: napari_psf_extractor._widget:MainWidget
+      title: PSF Extractor
 
   readers:
     - command: napari-psf-extractor.get_reader
@@ -31,7 +31,6 @@ contributions:
       layer_types: ['image']
       filename_extensions: ['.npy']
 
-  sample_data:
-    - command: napari-psf-extractor.make_sample_data
+  widgets:
+    - command: napari-psf-extractor.psf_widget
       display_name: PSF Extractor
-      key: unique_id.1
