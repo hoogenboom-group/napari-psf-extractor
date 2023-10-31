@@ -18,3 +18,42 @@ def normalize(input_array):
 
     return input_array
 
+
+def crop_to_bbox(input_array):
+    """
+    Crop a 2D array to the bounding box of non-transparent pixels.
+
+    Parameters
+    ----------
+    input_array : np.ndarray
+        2D array of shape (M, N, 4) where the last dimension is RGBA.
+
+    Returns
+    -------
+    cropped_array : np.ndarray
+        2D array of shape (M', N', 4) where the last dimension is RGBA.
+        M' and N' are the dimensions of the bounding box of non-transparent
+        pixels.
+    """
+
+    # Ensure the input_array is C-contiguous
+    input_array = np.ascontiguousarray(input_array)
+
+    # Find the bounding box of the non-transparent pixels
+    non_transparent_rows = np.any(input_array[:, :, 3] > 0, axis=1)
+    non_transparent_columns = np.any(input_array[:, :, 3] > 0, axis=0)
+
+    # If the input array is completely transparent, return it
+    if non_transparent_rows.sum() == 0:
+        return input_array
+
+    min_row, max_row = np.where(non_transparent_rows)[0][[0, -1]]
+    min_col, max_col = np.where(non_transparent_columns)[0][[0, -1]]
+
+    # Crop the input array to the bounding box of non-transparent pixels
+    cropped_array = input_array[min_row:max_row + 1, min_col:max_col + 1]
+
+    # Make a C-contiguous copy of the cropped array
+    cropped_array = np.copy(cropped_array)
+
+    return cropped_array

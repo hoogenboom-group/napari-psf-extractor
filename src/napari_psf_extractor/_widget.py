@@ -1,15 +1,20 @@
 import textwrap
 from typing import TYPE_CHECKING
 
+import napari
 import numpy as np
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QVBoxLayout, QLabel
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QFileDialog
 from magicgui import magicgui
+from napari.utils.events.event import Event
 from napari.utils.notifications import show_error
+from napari_matplotlib.base import NapariMPLWidget
+from psf_extractor.plotting import fire
 from qtpy.QtWidgets import QWidget
 from superqt import QRangeSlider
 
-from napari_psf_extractor.utils import normalize
+from napari_psf_extractor.extractor import get_features_plot_data
+from napari_psf_extractor.utils import crop_to_bbox, normalize
 
 # Hide napari imports from type support and autocompletion
 # https://napari.org/stable/guides/magicgui.html?highlight=type_checking
@@ -84,13 +89,41 @@ class MainWidget(QWidget):
         self.layout().addWidget(param_setter.native)
 
         self.state = 0
+        self.stack = None
+        self.mip = None
+        self.features_init = None
+        self.features_layer = None
+
+        # Widgets
+        self.range_slider, self.range_label = create_range_slider_widget(min_value=0, max_value=100)
+        self.range_slider.hide()
+        self.range_label.hide()
+
+        self.plot_widget = NapariMPLWidget(napari_viewer, parent=self)
+        self.plot_widget.hide()
+
+        self.save_button = QPushButton("Save PSF")
+        self.save_button.hide()
+
+        # Add hidden widgets to layout
+        self.layout().addWidget(self.range_slider)
+        self.layout().addWidget(self.range_label)
+        self.layout().addWidget(self.save_button)
 
         # ---------------
         # Connect Signals
         # ---------------
 
+        self.range_slider.valueChanged.connect(self.update_range_label)
+        self.save_button.clicked.connect(self.save_pdf)
+
         self.viewer.layers.events.inserted.connect(param_setter.reset_choices)
         self.viewer.layers.events.removed.connect(param_setter.reset_choices)
+
+        # Create a QTimer to handle delayed updates
+        self.features_timer = QTimer()
+        self.features_timer.setSingleShot(True)
+        self.features_timer.timeout.connect(self.update_features_layer)
 
     def _init_optical_settings(self, lambda_emission, na, psx, psy, psz, image_layer):
         """
@@ -143,5 +176,52 @@ class MainWidget(QWidget):
         Refresh the widget and move to the next state.
         """
         if self.state == 0:
+            self.range_slider.show()
+            self.range_label.show()
+            self.save_button.show()
+
+            self.update_features_layer()
+
             # Move to next state
             self.state = 1
+
+    def update_range_label(self, mass_range):
+        """
+        Update the range label. This function is called when the range slider is moved.
+        """
+        self.range_label.setText(f"Mass Range: [{mass_range[0]}, {mass_range[1]}]")
+
+        # Restart the timer
+        if self.features_timer.isActive():
+            self.features_timer.stop()
+
+        # Timer used to prevent excessive and rapid updates (50 ms)
+        self.features_timer.start(50)
+
+    def update_features_layer(self):
+        """
+        Update the features layer.
+        """
+        if not hasattr(self, "mip"):
+            show_error("Error: Please select an image stack.")
+            pass
+
+        if self.mip is not None and isinstance(self.mip, np.ndarray):
+            data = get_features_plot_data(
+                self.plot_widget,
+                self.mip,
+                self.dx, self.dy,
+                self.range_slider.value()
+            )
+
+            if not self.viewer_has_layer("Features"):
+                cmap = napari.utils.Colormap(fire.colors, display_name=fire.name)
+                self.features_layer = self.viewer.add_image(data=data, colormap=cmap, name='Features')
+
+            self.features_layer.data = data
+
+    def viewer_has_layer(self, layer_name):
+        """
+        Check if a layer with the given name is already present in the viewer.
+        """
+        return any(layer.name == layer_name for layer in self.viewer.layers)
