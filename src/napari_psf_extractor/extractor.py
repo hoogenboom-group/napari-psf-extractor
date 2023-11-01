@@ -51,5 +51,49 @@ def get_features_plot_data(plot_widget, mip, dx, dy, mass):
     replacement_color = [255, 255, 255, 0]
     mask = np.all(data == [0, 0, 0, 255], axis=-1)
     data[mask] = replacement_color
-    
-    return data
+
+    return data, features_init
+
+
+def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz):
+    """
+    Extract a PSF from a given stack and feature set.
+    """
+    # Update feature set
+    features_min_mass = features.loc[(features['raw_mass'] > min_mass)]
+    features_mass = features.loc[(features['raw_mass'] > min_mass)
+                                 & (features['raw_mass'] < max_mass)]
+
+    overlapping = psfe.detect_overlapping_features(features_min_mass, wx, wy)
+
+    # Detect edge features
+    dz, dy, dx = stack.shape
+    edges = psfe.detect_edge_features(features_mass, dx, dy, wx, wy)
+
+    # Combine
+    overlapping = np.concatenate([overlapping, edges])
+
+    # Update feature set
+    features_overlap = features_mass.loc[~features_mass.index.isin(overlapping)]
+
+    # Extract PSFs
+    psfs, features_extracted = psfe.extract_psfs(
+        stack,
+        features=features_overlap,
+        shape=(wz, wy, wx)
+    )
+
+    # Filter locations
+    locations = psfe.localize_psfs(psfs, integrate=False)
+
+    loc_filtered, features_filtered, psfs_filtered = psfe.filt_locations(
+        locations,
+        features_extracted,
+        psfs
+    )
+
+    # Align PSFs
+    usf = 5
+    psf_sum = psfe.align_psfs(psfs_filtered, loc_filtered, upsample_factor=usf)
+
+    return psf_sum

@@ -7,13 +7,13 @@ from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QFileDialog
 from magicgui import magicgui
 from napari.utils.events.event import Event
-from napari.utils.notifications import show_error
 from napari_matplotlib.base import NapariMPLWidget
+import psf_extractor as psfe
 from psf_extractor.plotting import fire
 from qtpy.QtWidgets import QWidget
 from superqt import QRangeSlider
 
-from napari_psf_extractor.extractor import get_features_plot_data
+from napari_psf_extractor.extractor import extract_psf, get_features_plot_data
 from napari_psf_extractor.utils import crop_to_bbox, normalize
 
 # Hide napari imports from type support and autocompletion
@@ -62,12 +62,12 @@ class MainWidget(QWidget):
                 lambda_emission: float = 520,
         ):
             if image_layer is None:
-                show_error("Error: Please select an image stack.")
+                print("Error: Please select an image stack.")
                 return
 
             # Check if any of the input elements is equal to 0
             if psx == 0 or psy == 0 or psz == 0 or na == 0 or lambda_emission == 0:
-                show_error("Error: All input elements must be non-zero.")
+                print("Error: All input elements must be non-zero.")
                 return
 
             self._init_optical_settings(lambda_emission, na, psx, psy, psz, image_layer)
@@ -115,7 +115,7 @@ class MainWidget(QWidget):
         # ---------------
 
         self.range_slider.valueChanged.connect(self.update_range_label)
-        self.save_button.clicked.connect(self.save_pdf)
+        self.save_button.clicked.connect(self.save_psf)
 
         self.viewer.layers.events.inserted.connect(param_setter.reset_choices)
         self.viewer.layers.events.removed.connect(param_setter.reset_choices)
@@ -185,6 +185,12 @@ class MainWidget(QWidget):
             # Move to next state
             self.state = 1
 
+        elif self.state == 1:
+            self.save_button.show()
+
+            # Move to next state
+            self.state = 2
+
     def update_range_label(self, mass_range):
         """
         Update the range label. This function is called when the range slider is moved.
@@ -203,11 +209,11 @@ class MainWidget(QWidget):
         Update the features layer.
         """
         if not hasattr(self, "mip"):
-            show_error("Error: Please select an image stack.")
+            print("Error: Please select an image stack.")
             pass
 
         if self.mip is not None and isinstance(self.mip, np.ndarray):
-            data = get_features_plot_data(
+            data, self.features_init = get_features_plot_data(
                 self.plot_widget,
                 self.mip,
                 self.dx, self.dy,
@@ -225,3 +231,43 @@ class MainWidget(QWidget):
         Check if a layer with the given name is already present in the viewer.
         """
         return any(layer.name == layer_name for layer in self.viewer.layers)
+
+    def save_psf(self):
+        """
+        Save the extracted PSF to a file.
+        """
+        self.save_button.setEnabled(False)
+
+        # Open a folder selection dialog
+        options = QFileDialog.Options()
+        options |= QFileDialog.ReadOnly
+
+        folder_path = QFileDialog.getExistingDirectory(
+            None, "Select a folder to save the stack",
+            options=options
+        )
+
+        # Check if user selected a folder
+        if folder_path:
+            folder_path = folder_path + "/"
+
+            try:
+                psf_sum = extract_psf(
+                    min_mass=self.range_slider.value()[0],
+                    max_mass=self.range_slider.value()[1],
+                    stack=self.stack,
+                    features=self.features_init,
+                    wx=self.wx, wy=self.wy, wz=self.wz
+                )
+
+                # Save PSF results to folder
+                psfe.save_stack(
+                    psf_sum, folder_path,
+                    psx=self.psx, psy=self.psy, psz=self.psz, usf=5
+                )
+            except Exception as e:
+                # TODO: find why this breaks matplotlib
+                # show_error(f"Error: {e}")
+                print(e)
+
+        self.save_button.setEnabled(True)
