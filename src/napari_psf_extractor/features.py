@@ -2,6 +2,7 @@ import threading
 import napari
 import numpy as np
 from napari._qt.qthreading import thread_worker
+from napari.utils.notifications import show_error
 from psf_extractor.plotting import fire
 
 from napari_psf_extractor.extractor import get_features_plot_data
@@ -23,7 +24,7 @@ class Features:
         Create a worker to update the features layer.
         """
         if not hasattr(self.widget, "mip"):
-            print("Error: Please select an image stack.")
+            show_error("Error: Please select an image stack.")
             pass
 
         if self.widget.mip is not None and isinstance(self.widget.mip, np.ndarray):
@@ -42,6 +43,8 @@ class Features:
             # Mass range at the time of the update call
             curr_range = self.widget.range_slider.value()
 
+            self.widget.status.start_loading_animation("Finding features... ")
+
             worker = self.update_factory()
             worker.returned.connect(lambda: self.callback(curr_range))
             worker.start()
@@ -58,6 +61,7 @@ class Features:
         curr_range : tuple
             The mass range at the time of the update call.
         """
+
         # Create features layer if it doesn't exist
         if not self.widget.viewer_has_layer("Features"):
             cmap = napari.utils.Colormap(fire.colors, display_name=fire.name)
@@ -65,6 +69,7 @@ class Features:
 
         # Update features layer
         self.features_layer.data = self.data
+        self.widget.status.stop_animation()
         self.lock.release()
 
         # Restart if mass range changed
@@ -72,7 +77,4 @@ class Features:
             self.update()
 
     def get_features(self):
-        """
-        Get the features.
-        """
         return self.features_init

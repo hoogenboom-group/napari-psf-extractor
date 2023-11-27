@@ -43,11 +43,15 @@ def get_features_plot_data(plot_widget, mip, dx, dy, mass):
     # Fetch plot matplotlib data from buffer
     data = np.array(plot_widget.canvas.figure.canvas.renderer.buffer_rgba())
 
+    # Replace coloured background with transparent background
+    replacement_color = [0, 0, 0, 0]
+
+    mask = np.all(data == [255, 255, 255, 255], axis=-1)
+    data[mask] = replacement_color
+
     # Crop to bbox to remove white space
     data = crop_to_bbox(data)
 
-    # Replace white background with transparent background
-    replacement_color = [255, 255, 255, 0]
     mask = np.all(data == [0, 0, 0, 255], axis=-1)
     data[mask] = replacement_color
 

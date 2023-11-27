@@ -1,17 +1,17 @@
-import textwrap
 from typing import TYPE_CHECKING
 
 import numpy as np
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QFileDialog
+from matplotlib import pyplot as plt
+from qtpy.QtCore import Qt, QTimer
 from magicgui import magicgui
-from napari_matplotlib.base import NapariMPLWidget
+from napari.utils.notifications import show_error
 import psf_extractor as psfe
-from qtpy.QtWidgets import QWidget
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QFileDialog
 from superqt import QRangeSlider
 
 from napari_psf_extractor.extractor import extract_psf
 from napari_psf_extractor.features import Features
+from napari_psf_extractor.status_manager import StatusManager
 from napari_psf_extractor.utils import normalize
 
 # Hide napari imports from type support and autocompletion
@@ -60,12 +60,12 @@ class MainWidget(QWidget):
                 lambda_emission: float = 520,
         ):
             if image_layer is None:
-                print("Error: Please select an image stack.")
+                show_error("Error: Please select an image stack.")
                 return
 
             # Check if any of the input elements is equal to 0
             if psx == 0 or psy == 0 or psz == 0 or na == 0 or lambda_emission == 0:
-                print("Error: All input elements must be non-zero.")
+                show_error("Error: All input elements must be non-zero.")
                 return
 
             self._init_optical_settings(lambda_emission, na, psx, psy, psz, image_layer)
@@ -88,6 +88,7 @@ class MainWidget(QWidget):
         self.layout().addWidget(param_setter.native)
 
         self.features = Features(self)
+        self.status = StatusManager(self.viewer)
 
         self.state = 0
         self.stack = None
@@ -102,8 +103,7 @@ class MainWidget(QWidget):
         self.range_slider.hide()
         self.range_label.hide()
 
-        self.plot_widget = NapariMPLWidget(napari_viewer, parent=self)
-        self.plot_widget.hide()
+        self.plot_widget = plt.figure()
 
         self.save_button = QPushButton("Save PSF")
         self.save_button.hide()
@@ -153,26 +153,6 @@ class MainWidget(QWidget):
         self.wx = int(np.round(4 * dx_nm / psx))  # px
         self.wy = int(np.round(4 * dy_nm / psx))  # px
         self.wz = int(np.round(10 * dx_nm / psz))  # px
-
-        # Output
-        out = textwrap.dedent(f"""\
-            Optical settings
-            ----------------
-            NA.............. {na:.2f}
-            Wavelength...... {lambda_emission:.0f} nm
-            Pixelsize x..... {psx:.1f} nm/px
-            Pixelsize y..... {psy:.1f} nm/px
-            Pixelsize z..... {psz:.1f} nm/px
-            Diameter x...... {self.dx:.0f} px ({dx_nm:.1f} nm)
-            Diameter y...... {self.dy:.0f} px ({dy_nm:.1f} nm)
-            Diameter z...... {self.dz:.0f} px ({dz_nm:.1f} nm)
-            PSF window x.... {self.wx:.0f} px ({self.wx * psx:.0f} nm)
-            PSF window y.... {self.wy:.0f} px ({self.wy * psy:.0f} nm)
-            PSF window z.... {self.wz:.0f} px ({self.wz * psz:.0f} nm)
-            """)
-
-        print(f"Image layer: {image_layer}", '\n')
-        print(out)
 
     def refresh(self):
         """
@@ -249,8 +229,6 @@ class MainWidget(QWidget):
                     psx=self.psx, psy=self.psy, psz=self.psz, usf=5
                 )
             except Exception as e:
-                # TODO: find why this breaks matplotlib
-                # show_error(f"Error: {e}")
-                print(e)
+                show_error(f"Error: {e}")
 
         self.save_button.setEnabled(True)
