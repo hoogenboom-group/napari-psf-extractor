@@ -45,12 +45,13 @@ def get_features_plot_data(plot_widget, mip, dx, dy, mass):
 
     # Crop to bbox to remove white space
     data = crop_to_bbox(data)
-    data = cv2.resize(data, dsize=mip.shape, interpolation=cv2.INTER_CUBIC)
 
     # Replace white background with transparent background
     replacement_color = [255, 255, 255, 0]
     mask = np.all(data == [0, 0, 0, 255], axis=-1)
     data[mask] = replacement_color
+
+    data = cv2.resize(data, dsize=(mip.shape[1], mip.shape[0]), interpolation=cv2.INTER_NEAREST)
 
     return data, features_init
 

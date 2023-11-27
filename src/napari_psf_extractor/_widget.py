@@ -1,20 +1,18 @@
 import textwrap
 from typing import TYPE_CHECKING
 
-import napari
 import numpy as np
 from PyQt5.QtCore import Qt, QTimer
 from PyQt5.QtWidgets import QVBoxLayout, QLabel, QPushButton, QFileDialog
 from magicgui import magicgui
-from napari.utils.events.event import Event
 from napari_matplotlib.base import NapariMPLWidget
 import psf_extractor as psfe
-from psf_extractor.plotting import fire
 from qtpy.QtWidgets import QWidget
 from superqt import QRangeSlider
 
-from napari_psf_extractor.extractor import extract_psf, get_features_plot_data
-from napari_psf_extractor.utils import crop_to_bbox, normalize
+from napari_psf_extractor.extractor import extract_psf
+from napari_psf_extractor.features import Features
+from napari_psf_extractor.utils import normalize
 
 # Hide napari imports from type support and autocompletion
 # https://napari.org/stable/guides/magicgui.html?highlight=type_checking
@@ -75,6 +73,7 @@ class MainWidget(QWidget):
             self.stack = normalize(np.array(image_layer.data, dtype=np.float32))
             self.mip = np.max(self.stack, axis=0)
 
+            self.state = 0
             self.refresh()
 
         # ---------------------
@@ -88,14 +87,18 @@ class MainWidget(QWidget):
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(param_setter.native)
 
+        self.features = Features(self)
+
         self.state = 0
         self.stack = None
         self.mip = None
-        self.features_init = None
-        self.features_layer = None
+        self.range_slider_values = [0, 100]
 
         # Widgets
-        self.range_slider, self.range_label = create_range_slider_widget(min_value=0, max_value=100)
+        self.range_slider, self.range_label = create_range_slider_widget(
+            min_value=self.range_slider_values[0],
+            max_value=self.range_slider_values[1]
+        )
         self.range_slider.hide()
         self.range_label.hide()
 
@@ -123,7 +126,7 @@ class MainWidget(QWidget):
         # Create a QTimer to handle delayed updates
         self.features_timer = QTimer()
         self.features_timer.setSingleShot(True)
-        self.features_timer.timeout.connect(self.update_features_layer)
+        self.features_timer.timeout.connect(self.features.update)
 
     def _init_optical_settings(self, lambda_emission, na, psx, psy, psz, image_layer):
         """
@@ -180,7 +183,9 @@ class MainWidget(QWidget):
             self.range_label.show()
             self.save_button.show()
 
-            self.update_features_layer()
+            self.range_slider.setValue(
+                (self.range_slider_values[0], self.range_slider_values[1])
+            )
 
             # Move to next state
             self.state = 1
@@ -201,30 +206,8 @@ class MainWidget(QWidget):
         if self.features_timer.isActive():
             self.features_timer.stop()
 
-        # Timer used to prevent excessive and rapid updates (50 ms)
-        self.features_timer.start(50)
-
-    def update_features_layer(self):
-        """
-        Update the features layer.
-        """
-        if not hasattr(self, "mip"):
-            print("Error: Please select an image stack.")
-            pass
-
-        if self.mip is not None and isinstance(self.mip, np.ndarray):
-            data, self.features_init = get_features_plot_data(
-                self.plot_widget,
-                self.mip,
-                self.dx, self.dy,
-                self.range_slider.value()
-            )
-
-            if not self.viewer_has_layer("Features"):
-                cmap = napari.utils.Colormap(fire.colors, display_name=fire.name)
-                self.features_layer = self.viewer.add_image(data=data, colormap=cmap, name='Features')
-
-            self.features_layer.data = data
+        # Timer used to prevent excessive and rapid updates (32 ms)
+        self.features_timer.start(32)
 
     def viewer_has_layer(self, layer_name):
         """
@@ -256,7 +239,7 @@ class MainWidget(QWidget):
                     min_mass=self.range_slider.value()[0],
                     max_mass=self.range_slider.value()[1],
                     stack=self.stack,
-                    features=self.features_init,
+                    features=self.features.get_features(),
                     wx=self.wx, wy=self.wy, wz=self.wz
                 )
 
