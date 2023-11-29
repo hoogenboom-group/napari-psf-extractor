@@ -1,16 +1,16 @@
 from typing import TYPE_CHECKING
 
 import numpy as np
-from matplotlib import pyplot as plt
-from magicgui import magicgui
-from napari.utils.notifications import show_error
 import psf_extractor as psfe
+from magicgui import magicgui
+from matplotlib import pyplot as plt
+from napari.utils.notifications import show_error
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog
 
 from napari_psf_extractor.components.sliders import RangeSlider
+from napari_psf_extractor.components.statusbar import StatusMessage
 from napari_psf_extractor.extractor import extract_psf
 from napari_psf_extractor.features import Features
-from napari_psf_extractor.components.statusbar import StatusMessage
 from napari_psf_extractor.utils import normalize
 
 # Hide napari imports from type support and autocompletion
@@ -93,6 +93,8 @@ class MainWidget(QWidget):
 
         self.layout().addWidget(param_setter.native)
         self.layout().addWidget(self.mass_slider)
+        self.layout().addWidget(self.features.label)
+        self.layout().addStretch(1)
         self.layout().addWidget(self.save_button)
 
         # ---------------
@@ -135,6 +137,7 @@ class MainWidget(QWidget):
 
         self.mass_slider.hide()
         self.save_button.hide()
+        self.features.label.hide()
 
     def refresh(self):
         """
@@ -142,6 +145,7 @@ class MainWidget(QWidget):
         """
         if self.state == 0:
             self.mass_slider.reset()
+            self.features.label.show()
             self.mass_slider.show()
             self.save_button.show()
 

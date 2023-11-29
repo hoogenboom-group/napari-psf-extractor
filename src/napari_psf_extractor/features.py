@@ -5,6 +5,7 @@ import numpy as np
 from napari._qt.qthreading import thread_worker
 from napari.utils.notifications import show_error
 from psf_extractor.plotting import fire
+from qtpy.QtWidgets import QLabel
 
 from napari_psf_extractor.extractor import get_features_plot_data
 
@@ -16,8 +17,10 @@ class Features:
         self.lock = threading.Lock()
 
         self.data = None
+        self.count = None
         self.features_init = None
-        self.features_layer = None
+        self.layer = None
+        self.label = QLabel(f"Features found: {self.count}")
 
     @thread_worker
     def update_factory(self):
@@ -29,7 +32,7 @@ class Features:
             pass
 
         if self.widget.mip is not None and isinstance(self.widget.mip, np.ndarray):
-            self.data, self.features_init = get_features_plot_data(
+            self.data, self.features_init, self.count = get_features_plot_data(
                 self.widget.plot_fig,
                 self.widget.mip,
                 self.widget.dx, self.widget.dy,
@@ -66,10 +69,11 @@ class Features:
         # Create features layer if it doesn't exist
         if not self.layer_exists("Features"):
             cmap = napari.utils.Colormap(fire.colors, display_name=fire.name)
-            self.features_layer = self.widget.viewer.add_image(data=self.data, colormap=cmap, name='Features')
+            self.layer = self.widget.viewer.add_image(data=self.data, colormap=cmap, name='Features')
 
         # Update features layer
-        self.features_layer.data = self.data
+        self.layer.data = self.data
+        self.label.setText(f"Features found: {self.count}")
         self.widget.status.stop_animation()
         self.lock.release()
 

@@ -4,6 +4,26 @@ from psf_extractor.plotting import fire
 
 
 def plot_mass_range(ax, mip, mass, features):
+    """
+    Plot the features in the mass range [mass[0], mass[1]].
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        The axes to plot on.
+    mip : numpy.ndarray
+        The maximum intensity projection of the image stack.
+    mass : tuple
+        The mass range to plot.
+    features : pandas.DataFrame
+        The features to plot.
+
+    Returns
+    -------
+    int
+        The number of features found.
+    """
+
     # Enhance contrast in MIP (by taking the log)
     s = 1 / mip[mip != 0].min()  # scaling factor (such that log(min) = 0
     mip_log = np.log(s * mip,
@@ -25,3 +45,5 @@ def plot_mass_range(ax, mip, mass, features):
     ax.imshow(background, cmap=fire)
     ax.plot(df['x'], df['y'], ls='', color='#00ff00',
             marker='o', ms=7, mfc='none', mew=1)
+
+    return len(df)

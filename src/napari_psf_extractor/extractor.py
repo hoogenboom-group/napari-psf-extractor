@@ -3,8 +3,8 @@ import numpy as np
 import psf_extractor as psfe
 import trackpy
 
-from napari_psf_extractor.utils import crop_to_bbox
 from napari_psf_extractor.plotting import plot_mass_range
+from napari_psf_extractor.utils import crop_to_bbox
 
 
 def get_features_plot_data(plot_widget, mip, dx, dy, mass):
@@ -37,7 +37,7 @@ def get_features_plot_data(plot_widget, mip, dx, dy, mass):
     # Plot features
     features_init = trackpy.locate(mip, diameter=[dy, dx]).reset_index(drop=True)
 
-    plot_mass_range(mip=mip, ax=ax, mass=mass, features=features_init)
+    feature_count = plot_mass_range(mip=mip, ax=ax, mass=mass, features=features_init)
     plot_widget.canvas.draw()
 
     # Fetch plot matplotlib data from buffer
@@ -57,7 +57,7 @@ def get_features_plot_data(plot_widget, mip, dx, dy, mass):
 
     data = cv2.resize(data, dsize=(mip.shape[1], mip.shape[0]), interpolation=cv2.INTER_NEAREST)
 
-    return data, features_init
+    return data, features_init, feature_count
 
 
 def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz):
