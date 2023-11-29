@@ -2,34 +2,9 @@ name: napari-psf-extractor
 display_name: PSF Extractor
 contributions:
   commands:
-    - id: napari-psf-extractor.get_reader
-      python_name: napari_psf_extractor._reader:napari_get_reader
-      title: Open data with PSF Extractor
-
-    - id: napari-psf-extractor.write_multiple
-      python_name: napari_psf_extractor._writer:write_multiple
-      title: Save multi-layer data with PSF Extractor
-
-    - id: napari-psf-extractor.write_single_image
-      python_name: napari_psf_extractor._writer:write_single_image
-      title: Save image data with PSF Extractor
-
     - id: napari-psf-extractor.psf_widget
-      python_name: napari_psf_extractor._widget:MainWidget
+      python_name: napari_psf_extractor.widget:MainWidget
       title: PSF Extractor
-
-  readers:
-    - command: napari-psf-extractor.get_reader
-      accepts_directories: false
-      filename_patterns: ['*.npy']
-
-  writers:
-    - command: napari-psf-extractor.write_multiple
-      layer_types: ['image*','labels*']
-      filename_extensions: []
-    - command: napari-psf-extractor.write_single_image
-      layer_types: ['image']
-      filename_extensions: ['.npy']
 
   widgets:
     - command: napari-psf-extractor.psf_widget

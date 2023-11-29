@@ -1,7 +1,7 @@
 from qtpy.QtCore import QTimer
 
 
-class StatusManager:
+class StatusMessage:
     """
     A class to manage the status bar of the napari viewer.
     """

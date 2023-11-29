@@ -2,16 +2,15 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 from matplotlib import pyplot as plt
-from qtpy.QtCore import Qt, QTimer
 from magicgui import magicgui
 from napari.utils.notifications import show_error
 import psf_extractor as psfe
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton, QFileDialog
-from superqt import QRangeSlider
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog
 
+from napari_psf_extractor.components.sliders import RangeSlider
 from napari_psf_extractor.extractor import extract_psf
 from napari_psf_extractor.features import Features
-from napari_psf_extractor.status_manager import StatusManager
+from napari_psf_extractor.components.statusbar import StatusMessage
 from napari_psf_extractor.utils import normalize
 
 # Hide napari imports from type support and autocompletion
@@ -20,16 +19,6 @@ if TYPE_CHECKING:
     pass
 
 from napari.layers.image.image import Image
-
-
-def create_range_slider_widget(min_value=0, max_value=100):
-    range_slider = QRangeSlider(Qt.Orientation.Horizontal)
-
-    range_slider.setRange(min_value, max_value)
-    range_slider.setValue((min_value, max_value))
-    range_label = QLabel(f"Range: [{min_value}, {max_value}]")
-
-    return range_slider, range_label
 
 
 class MainWidget(QWidget):
@@ -68,12 +57,12 @@ class MainWidget(QWidget):
                 show_error("Error: All input elements must be non-zero.")
                 return
 
-            self._init_optical_settings(lambda_emission, na, psx, psy, psz, image_layer)
+            self._init_optical_settings(lambda_emission, na, psx, psy, psz)
 
             self.stack = normalize(np.array(image_layer.data, dtype=np.float32))
             self.mip = np.max(self.stack, axis=0)
 
-            self.state = 0
+            self.reset()
             self.refresh()
 
         # ---------------------
@@ -84,51 +73,38 @@ class MainWidget(QWidget):
 
         self.viewer = napari_viewer
 
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(param_setter.native)
-
         self.features = Features(self)
-        self.status = StatusManager(self.viewer)
+        self.status = StatusMessage(self.viewer)
+        self.mass_slider = RangeSlider(0, 100, callback=self.features.update)
+        self.save_button = QPushButton("Save PSF")
 
-        self.state = 0
+        self.plot_fig = plt.figure()
+        self.state = None
         self.stack = None
         self.mip = None
-        self.range_slider_values = [0, 100]
 
-        # Widgets
-        self.range_slider, self.range_label = create_range_slider_widget(
-            min_value=self.range_slider_values[0],
-            max_value=self.range_slider_values[1]
-        )
-        self.range_slider.hide()
-        self.range_label.hide()
+        self.reset()
 
-        self.plot_widget = plt.figure()
+        # ---------------
+        # Layout
+        # ---------------
 
-        self.save_button = QPushButton("Save PSF")
-        self.save_button.hide()
+        self.setLayout(QVBoxLayout())
 
-        # Add hidden widgets to layout
-        self.layout().addWidget(self.range_slider)
-        self.layout().addWidget(self.range_label)
+        self.layout().addWidget(param_setter.native)
+        self.layout().addWidget(self.mass_slider)
         self.layout().addWidget(self.save_button)
 
         # ---------------
         # Connect Signals
         # ---------------
 
-        self.range_slider.valueChanged.connect(self.update_range_label)
-        self.save_button.clicked.connect(self.save_psf)
+        self.save_button.clicked.connect(self.save_to_folder)
 
         self.viewer.layers.events.inserted.connect(param_setter.reset_choices)
         self.viewer.layers.events.removed.connect(param_setter.reset_choices)
 
-        # Create a QTimer to handle delayed updates
-        self.features_timer = QTimer()
-        self.features_timer.setSingleShot(True)
-        self.features_timer.timeout.connect(self.features.update)
-
-    def _init_optical_settings(self, lambda_emission, na, psx, psy, psz, image_layer):
+    def _init_optical_settings(self, lambda_emission, na, psx, psy, psz):
         """
         Initialize optical settings.
         """
@@ -150,22 +126,24 @@ class MainWidget(QWidget):
         self.dx, self.dy, self.dz = np.ceil([dx, dy, dz]).astype(int) // 2 * 2 + 1
 
         # Set PSF window
-        self.wx = int(np.round(4 * dx_nm / psx))  # px
-        self.wy = int(np.round(4 * dy_nm / psx))  # px
-        self.wz = int(np.round(10 * dx_nm / psz))  # px
+        self.wx = int(np.round(4 * dx_nm / psx))    # px
+        self.wy = int(np.round(4 * dy_nm / psx))    # px
+        self.wz = int(np.round(10 * dx_nm / psz))   # px
+
+    def reset(self):
+        self.state = 0
+
+        self.mass_slider.hide()
+        self.save_button.hide()
 
     def refresh(self):
         """
         Refresh the widget and move to the next state.
         """
         if self.state == 0:
-            self.range_slider.show()
-            self.range_label.show()
+            self.mass_slider.reset()
+            self.mass_slider.show()
             self.save_button.show()
-
-            self.range_slider.setValue(
-                (self.range_slider_values[0], self.range_slider_values[1])
-            )
 
             # Move to next state
             self.state = 1
@@ -176,28 +154,9 @@ class MainWidget(QWidget):
             # Move to next state
             self.state = 2
 
-    def update_range_label(self, mass_range):
+    def save_to_folder(self):
         """
-        Update the range label. This function is called when the range slider is moved.
-        """
-        self.range_label.setText(f"Mass Range: [{mass_range[0]}, {mass_range[1]}]")
-
-        # Restart the timer
-        if self.features_timer.isActive():
-            self.features_timer.stop()
-
-        # Timer used to prevent excessive and rapid updates (32 ms)
-        self.features_timer.start(32)
-
-    def viewer_has_layer(self, layer_name):
-        """
-        Check if a layer with the given name is already present in the viewer.
-        """
-        return any(layer.name == layer_name for layer in self.viewer.layers)
-
-    def save_psf(self):
-        """
-        Save the extracted PSF to a file.
+        Save the extracted PSF to a folder.
         """
         self.save_button.setEnabled(False)
 
@@ -216,8 +175,8 @@ class MainWidget(QWidget):
 
             try:
                 psf_sum = extract_psf(
-                    min_mass=self.range_slider.value()[0],
-                    max_mass=self.range_slider.value()[1],
+                    min_mass=self.mass_slider.value()[0],
+                    max_mass=self.mass_slider.value()[1],
                     stack=self.stack,
                     features=self.features.get_features(),
                     wx=self.wx, wy=self.wy, wz=self.wz

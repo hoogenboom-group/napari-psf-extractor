@@ -1,4 +1,5 @@
 import threading
+
 import napari
 import numpy as np
 from napari._qt.qthreading import thread_worker
@@ -29,10 +30,10 @@ class Features:
 
         if self.widget.mip is not None and isinstance(self.widget.mip, np.ndarray):
             self.data, self.features_init = get_features_plot_data(
-                self.widget.plot_widget,
+                self.widget.plot_fig,
                 self.widget.mip,
                 self.widget.dx, self.widget.dy,
-                self.widget.range_slider.value()
+                self.widget.mass_slider.value()
             )
 
     def update(self):
@@ -41,7 +42,7 @@ class Features:
         """
         if self.lock.acquire(blocking=False):
             # Mass range at the time of the update call
-            curr_range = self.widget.range_slider.value()
+            curr_range = self.widget.mass_slider.value()
 
             self.widget.status.start_loading_animation("Finding features... ")
 
@@ -63,7 +64,7 @@ class Features:
         """
 
         # Create features layer if it doesn't exist
-        if not self.widget.viewer_has_layer("Features"):
+        if not self.layer_exists("Features"):
             cmap = napari.utils.Colormap(fire.colors, display_name=fire.name)
             self.features_layer = self.widget.viewer.add_image(data=self.data, colormap=cmap, name='Features')
 
@@ -73,8 +74,14 @@ class Features:
         self.lock.release()
 
         # Restart if mass range changed
-        if curr_range != self.widget.range_slider.value():
+        if curr_range != self.widget.mass_slider.value():
             self.update()
 
     def get_features(self):
         return self.features_init
+
+    def layer_exists(self, layer_name):
+        """
+        Check if a layer with the given name is already present in the viewer.
+        """
+        return any(layer.name == layer_name for layer in self.widget.viewer.layers)
