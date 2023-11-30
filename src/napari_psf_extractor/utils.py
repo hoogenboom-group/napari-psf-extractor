@@ -57,3 +57,25 @@ def crop_to_bbox(input_array):
     cropped_array = np.copy(cropped_array)
 
     return cropped_array
+
+
+def remove_plot_background(image):
+    """
+    Remove the background of a matplotlib plot.
+
+    Namely, remove the white background and crop the image to the bounding box
+    """
+
+    # Replace coloured background with transparent background
+    replacement_color = [0, 0, 0, 0]
+
+    mask = np.all(image == [255, 255, 255, 255], axis=-1)
+    image[mask] = replacement_color
+
+    # Crop to bbox to remove white space
+    data = crop_to_bbox(image)
+
+    mask = np.all(data == [0, 0, 0, 255], axis=-1)
+    data[mask] = replacement_color
+
+    return data
