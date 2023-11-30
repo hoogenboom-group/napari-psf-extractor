@@ -79,8 +79,8 @@ class RangeSlider(QWidget):
         Update the slider values based on the text input fields.
         """
         try:
-            min_value = float(self.min_value_edit.text())
-            max_value = float(self.max_value_edit.text())
+            min_value = float(self.min_value_edit.text()) * 10
+            max_value = float(self.max_value_edit.text()) * 10
         except ValueError:
             show_error("Error: Invalid input.")
             return
