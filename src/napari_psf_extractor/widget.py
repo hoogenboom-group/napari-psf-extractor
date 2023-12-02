@@ -12,6 +12,7 @@ from napari_psf_extractor.components.sliders import RangeSlider
 from napari_psf_extractor.components.statusbar import StatusMessage
 from napari_psf_extractor.extractor import extract_psf
 from napari_psf_extractor.features import Features
+from napari_psf_extractor.plotting import plot_psf
 from napari_psf_extractor.utils import normalize
 
 # Hide napari imports from type support and autocompletion
@@ -229,5 +230,8 @@ class MainWidget(QWidget):
                 wx=self.wx, wy=self.wy, wz=self.wz,
                 pcc_min=self.pcc.value()
             )
+
+            # Plot extracted PSFs
+            plot_psf(psf_sum, self.psx, self.psy, self.psz)
         except Exception as e:
             show_error(f"Error: {e}")
