@@ -4,7 +4,7 @@ import numpy as np
 import psf_extractor as psfe
 from magicgui import magicgui
 from matplotlib import pyplot as plt
-from napari.utils.notifications import show_error
+from napari.utils.notifications import show_error, show_info
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QHBoxLayout
 
 from napari_psf_extractor.components.pcc import PCC
@@ -213,6 +213,7 @@ class MainWidget(QWidget):
             except Exception as e:
                 show_error(f"Error: {e}")
 
+        show_info("PSF stack saved successfully.")
         self.save_button.setEnabled(True)
 
     def extract(self):
