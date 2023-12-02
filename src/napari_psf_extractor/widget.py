@@ -5,7 +5,7 @@ import psf_extractor as psfe
 from magicgui import magicgui
 from matplotlib import pyplot as plt
 from napari.utils.notifications import show_error
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog
+from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QHBoxLayout
 
 from napari_psf_extractor.components.pcc import PCC
 from napari_psf_extractor.components.sliders import RangeSlider
@@ -82,6 +82,7 @@ class MainWidget(QWidget):
             result_label=self.features.label
         )
         self.save_button = QPushButton("Save")
+        self.extract_button = QPushButton("Extract")
         self.pcc = PCC(self)
 
         self.plot_fig = plt.figure()
@@ -102,13 +103,18 @@ class MainWidget(QWidget):
         self.layout().addWidget(self.pcc)
 
         self.layout().addStretch(1)
-        self.layout().addWidget(self.save_button)
+
+        buttons_layout = QHBoxLayout()
+        buttons_layout.addWidget(self.save_button)
+        buttons_layout.addWidget(self.extract_button)
+        self.layout().addLayout(buttons_layout)
 
         # ---------------
         # Connect Signals
         # ---------------
 
         self.save_button.clicked.connect(self.save_to_folder)
+        self.extract_button.clicked.connect(self.extract)
 
         self.viewer.layers.events.inserted.connect(param_setter.reset_choices)
         self.viewer.layers.events.removed.connect(param_setter.reset_choices)
@@ -146,6 +152,7 @@ class MainWidget(QWidget):
         self.save_button.hide()
         self.features.label.hide()
         self.pcc.hide()
+        self.extract_button.hide()
 
     def refresh(self):
         """
@@ -156,6 +163,7 @@ class MainWidget(QWidget):
             self.features.label.show()
             self.mass_slider.show()
             self.save_button.show()
+            self.extract_button.show()
             self.pcc.show()
 
             # Move to next state
@@ -205,3 +213,21 @@ class MainWidget(QWidget):
                 show_error(f"Error: {e}")
 
         self.save_button.setEnabled(True)
+
+    def extract(self):
+        """
+        Extract PSFs from the selected image stack.
+
+        This function is called when the "Extract" button is clicked.
+        """
+        try:
+            psf_sum, _ = extract_psf(
+                min_mass=self.mass_slider.value()[0],
+                max_mass=self.mass_slider.value()[1],
+                stack=self.stack,
+                features=self.features.get_features(),
+                wx=self.wx, wy=self.wy, wz=self.wz,
+                pcc_min=self.pcc.value()
+            )
+        except Exception as e:
+            show_error(f"Error: {e}")
