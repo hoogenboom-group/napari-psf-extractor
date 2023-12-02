@@ -77,6 +77,12 @@ class MainWidget(QWidget):
         self.status = StatusMessage(self.viewer)
         self.mass_slider = RangeSlider(0, 100, callback=self.features.update)
         self.save_button = QPushButton("Save PSF")
+        self.mass_slider = RangeSlider(
+            min_value=0, max_value=100,
+            callback=self.features.update,
+            result_label=self.features.label
+        )
+        self.save_button = QPushButton("Save")
 
         self.plot_fig = plt.figure()
         self.state = None
@@ -93,7 +99,7 @@ class MainWidget(QWidget):
 
         self.layout().addWidget(param_setter.native)
         self.layout().addWidget(self.mass_slider)
-        self.layout().addWidget(self.features.label)
+
         self.layout().addStretch(1)
         self.layout().addWidget(self.save_button)
 

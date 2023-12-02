@@ -9,7 +9,7 @@ class RangeSlider(QWidget):
     Range slider widget.
     """
 
-    def __init__(self, min_value, max_value, callback):
+    def __init__(self, min_value, max_value, callback, result_label=None):
         """
         Initialize the range slider widget.
         The slider values are in units of 0.1.
@@ -47,6 +47,8 @@ class RangeSlider(QWidget):
         layout = QVBoxLayout()
         layout.addLayout(input_layout)
         layout.addWidget(self.slider)
+        if result_label is not None:
+            layout.addWidget(result_label)
         self.setLayout(layout)
 
         # Signals
