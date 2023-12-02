@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from napari.utils.notifications import show_error
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog
 
+from napari_psf_extractor.components.pcc import PCC
 from napari_psf_extractor.components.sliders import RangeSlider
 from napari_psf_extractor.components.statusbar import StatusMessage
 from napari_psf_extractor.extractor import extract_psf
@@ -75,14 +76,13 @@ class MainWidget(QWidget):
 
         self.features = Features(self)
         self.status = StatusMessage(self.viewer)
-        self.mass_slider = RangeSlider(0, 100, callback=self.features.update)
-        self.save_button = QPushButton("Save PSF")
         self.mass_slider = RangeSlider(
             min_value=0, max_value=100,
             callback=self.features.update,
             result_label=self.features.label
         )
         self.save_button = QPushButton("Save")
+        self.pcc = PCC(self)
 
         self.plot_fig = plt.figure()
         self.state = None
@@ -99,6 +99,7 @@ class MainWidget(QWidget):
 
         self.layout().addWidget(param_setter.native)
         self.layout().addWidget(self.mass_slider)
+        self.layout().addWidget(self.pcc)
 
         self.layout().addStretch(1)
         self.layout().addWidget(self.save_button)
@@ -144,6 +145,7 @@ class MainWidget(QWidget):
         self.mass_slider.hide()
         self.save_button.hide()
         self.features.label.hide()
+        self.pcc.hide()
 
     def refresh(self):
         """
@@ -154,6 +156,7 @@ class MainWidget(QWidget):
             self.features.label.show()
             self.mass_slider.show()
             self.save_button.show()
+            self.pcc.show()
 
             # Move to next state
             self.state = 1
@@ -184,12 +187,13 @@ class MainWidget(QWidget):
             folder_path = folder_path + "/"
 
             try:
-                psf_sum = extract_psf(
+                psf_sum, _ = extract_psf(
                     min_mass=self.mass_slider.value()[0],
                     max_mass=self.mass_slider.value()[1],
                     stack=self.stack,
                     features=self.features.get_features(),
-                    wx=self.wx, wy=self.wy, wz=self.wz
+                    wx=self.wx, wy=self.wy, wz=self.wz,
+                    pcc_min=self.pcc.value()
                 )
 
                 # Save PSF results to folder

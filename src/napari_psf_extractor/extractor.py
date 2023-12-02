@@ -4,17 +4,17 @@ import psf_extractor as psfe
 import trackpy
 
 from napari_psf_extractor.plotting import plot_mass_range
-from napari_psf_extractor.utils import crop_to_bbox
+from napari_psf_extractor.utils import remove_plot_background
 
 
-def get_features_plot_data(plot_widget, mip, dx, dy, mass):
+def get_features_plot_data(plot_fig, mip, dx, dy, mass):
     """
     Get plot data for the features layer.
 
     Parameters
     ----------
-    plot_widget : napari_psf_extractor._widget.PlotWidget
-        The plot widget.
+    plot_fig : FigureCanvas
+        The plot figure.
     mip : np.ndarray
         The maximum intensity projection of the stack.
     dx : int
@@ -31,36 +31,26 @@ def get_features_plot_data(plot_widget, mip, dx, dy, mass):
         a transparent background.
     """
     # Clear previous plot
-    plot_widget.canvas.figure.clear()
-    ax = plot_widget.canvas.figure.add_subplot(111)
+    plot_fig.canvas.figure.clear()
+    ax = plot_fig.canvas.figure.add_subplot(111)
 
     # Plot features
     features_init = trackpy.locate(mip, diameter=[dy, dx]).reset_index(drop=True)
 
     feature_count = plot_mass_range(mip=mip, ax=ax, mass=mass, features=features_init)
-    plot_widget.canvas.draw()
+    plot_fig.canvas.draw()
 
     # Fetch plot matplotlib data from buffer
-    data = np.array(plot_widget.canvas.figure.canvas.renderer.buffer_rgba())
+    data = np.array(plot_fig.canvas.figure.canvas.renderer.buffer_rgba())
 
-    # Replace coloured background with transparent background
-    replacement_color = [0, 0, 0, 0]
-
-    mask = np.all(data == [255, 255, 255, 255], axis=-1)
-    data[mask] = replacement_color
-
-    # Crop to bbox to remove white space
-    data = crop_to_bbox(data)
-
-    mask = np.all(data == [0, 0, 0, 255], axis=-1)
-    data[mask] = replacement_color
+    data = remove_plot_background(data)
 
     data = cv2.resize(data, dsize=(mip.shape[1], mip.shape[0]), interpolation=cv2.INTER_NEAREST)
 
     return data, features_init, feature_count
 
 
-def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz):
+def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz, pcc_min):
     """
     Extract a PSF from a given stack and feature set.
     """
@@ -91,6 +81,11 @@ def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz):
     # Filter locations
     locations = psfe.localize_psfs(psfs, integrate=False)
 
+    # Filter PCC if enabled
+    if pcc_min != None:
+        features_pearson = filter_pcc(pcc_min, features_extracted, psfs)
+        psfs, features_extracted = psfe.extract_psfs(stack, features=features_pearson, shape=(wz, wy, wx))
+
     loc_filtered, features_filtered, psfs_filtered = psfe.filt_locations(
         locations,
         features_extracted,
@@ -101,4 +96,17 @@ def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz):
     usf = 5
     psf_sum = psfe.align_psfs(psfs_filtered, loc_filtered, upsample_factor=usf)
 
-    return psf_sum
+    return psf_sum, features_filtered
+
+
+def filter_pcc(pcc_min, features, psfs):
+    # Detect outlier PCCs
+    outliers_, pccs = psfe.detect_outlier_psfs(psfs, pcc_min=pcc_min, return_pccs=True)
+
+    # Stupid index trick thingy
+    df = features.reset_index()
+    outliers = df[df.index.isin(outliers_)]['index'].values
+
+    features_pearson = features.loc[~features.index.isin(outliers)]
+
+    return features_pearson
