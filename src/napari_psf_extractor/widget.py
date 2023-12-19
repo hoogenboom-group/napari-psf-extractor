@@ -96,6 +96,7 @@ class MainWidget(QWidget):
         self.img_name = None
         self.stack = None
         self.mip = None
+        self.psf_sum = None
 
         self.reset()
 
@@ -206,18 +207,9 @@ class MainWidget(QWidget):
             folder_path = folder_path + "/"
 
             try:
-                psf_sum, _ = extract_psf(
-                    min_mass=self.mass_slider.value()[0],
-                    max_mass=self.mass_slider.value()[1],
-                    stack=self.stack,
-                    features=self.features.get_features(),
-                    wx=self.wx, wy=self.wy, wz=self.wz,
-                    pcc_min=self.pcc.value()
-                )
-
                 # Save PSF results to folder
                 psfe.save_stack(
-                    psf_sum, folder_path,
+                    self.psf_sum, folder_path,
                     psx=self.psx, psy=self.psy, psz=self.psz, usf=5
                 )
             except Exception as e:
@@ -233,7 +225,7 @@ class MainWidget(QWidget):
         This function is called when the "Extract" button is clicked.
         """
         try:
-            psf_sum, _ = extract_psf(
+            self.psf_sum, _ = extract_psf(
                 min_mass=self.mass_slider.value()[0],
                 max_mass=self.mass_slider.value()[1],
                 stack=self.stack,
@@ -243,7 +235,7 @@ class MainWidget(QWidget):
             )
 
             # Plot extracted PSFs
-            plot_psf(psf_sum, self.psx, self.psy, self.psz)
+            plot_psf(self.psf_sum, self.psx, self.psy, self.psz)
 
             self.save_button.setEnabled(True)
         except Exception as e:
