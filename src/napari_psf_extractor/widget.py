@@ -35,12 +35,12 @@ class MainWidget(QWidget):
         # ------------------
 
         @magicgui(
-            call_button="Find features",
             psx={"tooltip": "Pixel size in x-direction [nm/px]"},
             psy={"tooltip": "Pixel size in y-direction [nm/px]"},
             psz={"tooltip": "Pixel size in z-direction [nm/px]"},
             na={"tooltip": "Numerical aperture of the objective"},
-            lambda_emission={"tooltip": "Emission wavelength [nm]"}
+            lambda_emission={"tooltip": "Emission wavelength [nm]"},
+            auto_call=True
         )
         def param_setter(
                 image_layer: Image,
@@ -61,11 +61,15 @@ class MainWidget(QWidget):
 
             self._init_optical_settings(lambda_emission, na, psx, psy, psz)
 
-            self.stack = normalize(np.array(image_layer.data, dtype=np.float32))
-            self.mip = np.max(self.stack, axis=0)
+            # Disable buttons on parameters change
+            self.disable_non_param_widgets()
 
-            self.reset()
-            self.refresh()
+            # Check if the image has changed
+            if self.img_name != image_layer.name:
+                self.stack = normalize(np.array(image_layer.data, dtype=np.float32))
+                self.mip = np.max(self.stack, axis=0)
+
+                self.img_name = image_layer.name
 
         # ---------------------
         # Widget initialization
@@ -84,10 +88,12 @@ class MainWidget(QWidget):
         )
         self.save_button = QPushButton("Save")
         self.extract_button = QPushButton("Extract")
+        self.find_features_button = QPushButton("Find features")
         self.pcc = PCC(self)
 
         self.plot_fig = plt.figure()
         self.state = None
+        self.img_name = None
         self.stack = None
         self.mip = None
 
@@ -100,14 +106,15 @@ class MainWidget(QWidget):
         self.setLayout(QVBoxLayout())
 
         self.layout().addWidget(param_setter.native)
+        self.layout().addWidget(self.find_features_button)
         self.layout().addWidget(self.mass_slider)
         self.layout().addWidget(self.pcc)
 
         self.layout().addStretch(1)
 
         buttons_layout = QHBoxLayout()
-        buttons_layout.addWidget(self.save_button)
         buttons_layout.addWidget(self.extract_button)
+        buttons_layout.addWidget(self.save_button)
         self.layout().addLayout(buttons_layout)
 
         # ---------------
@@ -116,6 +123,7 @@ class MainWidget(QWidget):
 
         self.save_button.clicked.connect(self.save_to_folder)
         self.extract_button.clicked.connect(self.extract)
+        self.find_features_button.clicked.connect(self.find_features)
 
         self.viewer.layers.events.inserted.connect(param_setter.reset_choices)
         self.viewer.layers.events.removed.connect(param_setter.reset_choices)
@@ -150,10 +158,10 @@ class MainWidget(QWidget):
         self.state = 0
 
         self.mass_slider.hide()
-        self.save_button.hide()
         self.features.label.hide()
         self.pcc.hide()
         self.extract_button.hide()
+        self.save_button.hide()
 
     def refresh(self):
         """
@@ -234,5 +242,31 @@ class MainWidget(QWidget):
 
             # Plot extracted PSFs
             plot_psf(psf_sum, self.psx, self.psy, self.psz)
+
+            self.save_button.setEnabled(True)
         except Exception as e:
             show_error(f"Error: {e}")
+
+    def find_features(self):
+        """
+        Find features in the selected image stack.
+        """
+        self.reset()
+        self.refresh()
+
+        # Enable all widgets, except for the save button
+        self.pcc.setEnabled(True)
+        self.mass_slider.setEnabled(True)
+        self.extract_button.setEnabled(True)
+
+    def disable_non_param_widgets(self):
+        """
+        Disable all widgets except for the parameter setter.
+
+        This function is called when the parameters are changed
+        and the features found become outdated.
+        """
+        self.pcc.setEnabled(False)
+        self.mass_slider.setEnabled(False)
+        self.extract_button.setEnabled(False)
+        self.save_button.setEnabled(False)

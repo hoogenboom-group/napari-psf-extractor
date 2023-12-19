@@ -44,6 +44,9 @@ class Features:
         Update the features layer asynchronously.
         """
         if self.lock.acquire(blocking=False):
+            # Disable save button as features became outdated
+            self.widget.save_button.setEnabled(False)
+
             # Mass range at the time of the update call
             curr_range = self.widget.mass_slider.value()
 
