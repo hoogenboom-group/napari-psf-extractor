@@ -1,10 +1,13 @@
 from napari.utils.notifications import show_error
+from qtpy.QtCore import Signal
 from qtpy.QtWidgets import QLineEdit, QHBoxLayout, QCheckBox, QWidget, QVBoxLayout, QLabel, QPushButton
 
 from napari_psf_extractor.extractor import extract_psf
 
 
 class PCC(QWidget):
+    changed = Signal()
+
     def __init__(self, widget):
         super().__init__()
 
@@ -34,6 +37,11 @@ class PCC(QWidget):
         self.checkbox.stateChanged.connect(self.update_checkbox)
         self.filter_button.clicked.connect(self.filter)
 
+        self.pcc_min.textChanged.connect(self.emit_changed)
+
+    def emit_changed(self):
+        self.changed.emit()
+
     def update_checkbox(self):
         if not self.checkbox.isChecked():
             self.pcc_min.hide()
@@ -47,6 +55,8 @@ class PCC(QWidget):
 
             self.pcc_min.setText("0.7")
             self.features_pcc_label.setText("Remaining features:")
+
+        self.emit_changed()
 
     def value(self):
         """

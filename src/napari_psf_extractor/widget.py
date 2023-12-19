@@ -125,6 +125,8 @@ class MainWidget(QWidget):
         self.extract_button.clicked.connect(self.extract)
         self.find_features_button.clicked.connect(self.find_features)
 
+        self.pcc.changed.connect(lambda: self.save_button.setEnabled(False))
+
         self.viewer.layers.events.inserted.connect(param_setter.reset_choices)
         self.viewer.layers.events.removed.connect(param_setter.reset_choices)
 
