@@ -92,13 +92,12 @@ class MainWidget(QWidget):
         self.pcc = PCC(self)
 
         self.plot_fig = plt.figure()
-        self.state = None
         self.img_name = None
         self.stack = None
         self.mip = None
         self.psf_sum = None
 
-        self.reset()
+        self.hide_all()
 
         # ---------------
         # Layout
@@ -157,35 +156,15 @@ class MainWidget(QWidget):
         self.wy = int(np.round(4 * dy_nm / psx))    # px
         self.wz = int(np.round(10 * dx_nm / psz))   # px
 
-    def reset(self):
-        self.state = 0
-
+    def hide_all(self):
+        """
+        Hide all widgets.
+        """
         self.mass_slider.hide()
         self.features.label.hide()
         self.pcc.hide()
         self.extract_button.hide()
         self.save_button.hide()
-
-    def refresh(self):
-        """
-        Refresh the widget and move to the next state.
-        """
-        if self.state == 0:
-            self.mass_slider.reset()
-            self.features.label.show()
-            self.mass_slider.show()
-            self.save_button.show()
-            self.extract_button.show()
-            self.pcc.show()
-
-            # Move to next state
-            self.state = 1
-
-        elif self.state == 1:
-            self.save_button.show()
-
-            # Move to next state
-            self.state = 2
 
     def save_to_folder(self):
         """
@@ -245,8 +224,12 @@ class MainWidget(QWidget):
         """
         Find features in the selected image stack.
         """
-        self.reset()
-        self.refresh()
+        self.mass_slider.reset()
+        self.features.label.show()
+        self.mass_slider.show()
+        self.save_button.show()
+        self.extract_button.show()
+        self.pcc.show()
 
         # Enable all widgets, except for the save button
         self.pcc.setEnabled(True)
