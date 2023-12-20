@@ -44,6 +44,9 @@ def plot_mass_range(ax, mip, mass, features):
 
     background = np.ones(mip_log.shape)
 
+    fig = plt.gcf()
+    fig.set_size_inches(mip.shape[1] / fig.dpi, mip.shape[0] / fig.dpi)
+
     ax.imshow(background, cmap=fire)
     ax.plot(df['x'], df['y'], ls='', color='#00ff00',
             marker='o', ms=7, mfc='none', mew=1)
