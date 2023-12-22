@@ -78,13 +78,13 @@ def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz, pcc_min, usf):
         shape=(wz, wy, wx)
     )
 
-    # Filter locations
-    locations = psfe.localize_psfs(psfs, integrate=False)
-
     # Filter PCC if enabled
     if pcc_min != None:
         features_pearson = filter_pcc(pcc_min, features_extracted, psfs)
         psfs, features_extracted = psfe.extract_psfs(stack, features=features_pearson, shape=(wz, wy, wx))
+
+    # Filter locations
+    locations = psfe.localize_psfs(psfs, integrate=False)
 
     loc_filtered, features_filtered, psfs_filtered = psfe.filt_locations(
         locations,
