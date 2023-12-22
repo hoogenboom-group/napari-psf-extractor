@@ -94,7 +94,8 @@ class PCCWidget(QWidget):
                 stack=self.widget.stack,
                 features=features,
                 wx=self.widget.wx, wy=self.widget.wy, wz=self.widget.wz,
-                pcc_min=self.value()
+                pcc_min=self.value(),
+                usf=self.widget.usf
             )
 
             self.set_features_label(features)

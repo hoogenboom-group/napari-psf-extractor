@@ -50,7 +50,7 @@ def get_features_plot_data(plot_fig, mip, dx, dy, mass):
     return data, features_init, feature_count
 
 
-def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz, pcc_min):
+def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz, pcc_min, usf):
     """
     Extract a PSF from a given stack and feature set.
     """
@@ -93,7 +93,6 @@ def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz, pcc_min):
     )
 
     # Align PSFs
-    usf = 5
     psf_sum = psfe.align_psfs(psfs_filtered, loc_filtered, upsample_factor=usf)
 
     return psf_sum, features_filtered
@@ -103,7 +102,6 @@ def filter_pcc(pcc_min, features, psfs):
     # Detect outlier PCCs
     outliers_, pccs = psfe.detect_outlier_psfs(psfs, pcc_min=pcc_min, return_pccs=True)
 
-    # Stupid index trick thingy
     df = features.reset_index()
     outliers = df[df.index.isin(outliers_)]['index'].values
 

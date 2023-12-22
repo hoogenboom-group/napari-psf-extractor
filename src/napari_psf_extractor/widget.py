@@ -38,6 +38,7 @@ class MainWidget(QWidget):
             psx={"tooltip": "Pixel size in x-direction [nm/px]"},
             psy={"tooltip": "Pixel size in y-direction [nm/px]"},
             psz={"tooltip": "Pixel size in z-direction [nm/px]"},
+            usf={"tooltip": "Upsampling factor"},
             na={"tooltip": "Numerical aperture of the objective"},
             lambda_emission={"tooltip": "Emission wavelength [nm]"},
             auto_call=True
@@ -47,6 +48,7 @@ class MainWidget(QWidget):
                 psx: float = 63.5,
                 psy: float = 63.5,
                 psz: float = 100,
+                usf: float = 5,
                 na: float = 0.85,
                 lambda_emission: float = 520,
         ):
@@ -55,11 +57,11 @@ class MainWidget(QWidget):
                 return
 
             # Check if any of the input elements is equal to 0
-            if psx == 0 or psy == 0 or psz == 0 or na == 0 or lambda_emission == 0:
+            if psx == 0 or psy == 0 or psz == 0 or usf == 0 or na == 0 or lambda_emission == 0:
                 show_error("Error: All input elements must be non-zero.")
                 return
 
-            self._init_optical_settings(lambda_emission, na, psx, psy, psz)
+            self._init_optical_settings(lambda_emission, na, psx, psy, psz, usf)
 
             # Disable buttons on parameters change
             self.disable_non_param_widgets()
@@ -130,13 +132,14 @@ class MainWidget(QWidget):
         self.viewer.layers.events.inserted.connect(param_setter.reset_choices)
         self.viewer.layers.events.removed.connect(param_setter.reset_choices)
 
-    def _init_optical_settings(self, lambda_emission, na, psx, psy, psz):
+    def _init_optical_settings(self, lambda_emission, na, psx, psy, psz, usf):
         """
         Initialize optical settings.
         """
         self.psx = psx
         self.psy = psy
         self.psz = psz
+        self.usf = usf
 
         # Set expected feature diameters [nm]
         dx_nm = lambda_emission / na
@@ -189,7 +192,7 @@ class MainWidget(QWidget):
                 # Save PSF results to folder
                 psfe.save_stack(
                     self.psf_sum, folder_path,
-                    psx=self.psx, psy=self.psy, psz=self.psz, usf=5
+                    psx=self.psx, psy=self.psy, psz=self.psz, usf=self.usf
                 )
             except Exception as e:
                 show_error(f"Error: {e}")
@@ -210,11 +213,12 @@ class MainWidget(QWidget):
                 stack=self.stack,
                 features=self.features.get_features(),
                 wx=self.wx, wy=self.wy, wz=self.wz,
-                pcc_min=self.pcc.value()
+                pcc_min=self.pcc.value(),
+                usf=self.usf
             )
 
             # Plot extracted PSFs
-            plot_psf(self.psf_sum, self.psx, self.psy, self.psz)
+            plot_psf(self.psf_sum, self.psx / self.usf, self.psy / self.usf, self.psz / self.usf)
 
             self.save_button.setEnabled(True)
         except Exception as e:
