@@ -5,7 +5,7 @@ from qtpy.QtWidgets import QLineEdit, QHBoxLayout, QCheckBox, QWidget, QVBoxLayo
 from napari_psf_extractor.extractor import extract_psf
 
 
-class PCC(QWidget):
+class PCCWidget(QWidget):
     changed = Signal()
 
     def __init__(self, widget):

@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from napari.utils.notifications import show_error, show_info
 from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QHBoxLayout
 
-from napari_psf_extractor.components.pcc import PCC
+from napari_psf_extractor.components.pcc import PCCWidget
 from napari_psf_extractor.components.sliders import RangeSlider
 from napari_psf_extractor.components.statusbar import StatusMessage
 from napari_psf_extractor.extractor import extract_psf
@@ -89,7 +89,7 @@ class MainWidget(QWidget):
         self.save_button = QPushButton("Save")
         self.extract_button = QPushButton("Extract")
         self.find_features_button = QPushButton("Find features")
-        self.pcc = PCC(self)
+        self.pcc = PCCWidget(self)
 
         self.plot_fig = plt.figure()
         self.img_name = None
