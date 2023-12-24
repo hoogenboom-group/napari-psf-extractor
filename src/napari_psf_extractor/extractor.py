@@ -50,7 +50,7 @@ def get_features_plot_data(plot_fig, mip, dx, dy, mass):
     return data, features_init, feature_count
 
 
-def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz, pcc_min, usf):
+def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz):
     """
     Extract a PSF from a given stack and feature set.
     """
@@ -78,6 +78,13 @@ def extract_psf(min_mass, max_mass, stack, features, wx, wy, wz, pcc_min, usf):
         shape=(wz, wy, wx)
     )
 
+    return psfs, features_extracted
+
+
+def filter_psf(psfs, features_extracted, stack, wx, wy, wz, pcc_min, usf):
+    """
+    Filter PSFs by PCC and location.
+    """
     # Filter PCC if enabled
     if pcc_min != None:
         features_pearson = filter_pcc(pcc_min, features_extracted, psfs)

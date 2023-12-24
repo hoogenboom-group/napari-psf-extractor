@@ -10,7 +10,7 @@ from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QHBox
 from napari_psf_extractor.components.pcc import PCCWidget
 from napari_psf_extractor.components.sliders import RangeSlider
 from napari_psf_extractor.components.statusbar import StatusMessage
-from napari_psf_extractor.extractor import extract_psf
+from napari_psf_extractor.extractor import extract_psf, filter_psf
 from napari_psf_extractor.features import Features
 from napari_psf_extractor.plotting import plot_psf
 from napari_psf_extractor.utils import normalize
@@ -207,11 +207,18 @@ class MainWidget(QWidget):
         This function is called when the "Extract" button is clicked.
         """
         try:
-            self.psf_sum, _ = extract_psf(
+            psfs, features_extracted = extract_psf(
                 min_mass=self.mass_slider.value()[0],
                 max_mass=self.mass_slider.value()[1],
                 stack=self.stack,
                 features=self.features.get_features(),
+                wx=self.wx, wy=self.wy, wz=self.wz,
+            )
+
+            self.psf_sum, _ = filter_psf(
+                psfs=psfs,
+                features_extracted=features_extracted,
+                stack=self.stack,
                 wx=self.wx, wy=self.wy, wz=self.wz,
                 pcc_min=self.pcc.value(),
                 usf=self.usf

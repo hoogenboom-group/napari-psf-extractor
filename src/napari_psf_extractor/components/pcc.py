@@ -2,7 +2,7 @@ from napari.utils.notifications import show_error
 from qtpy.QtCore import Signal
 from qtpy.QtWidgets import QLineEdit, QHBoxLayout, QCheckBox, QWidget, QVBoxLayout, QLabel, QPushButton
 
-from napari_psf_extractor.extractor import extract_psf
+from napari_psf_extractor.extractor import extract_psf, filter_pcc
 
 
 class PCCWidget(QWidget):
@@ -88,16 +88,20 @@ class PCCWidget(QWidget):
             return
 
         try:
-            _, features = extract_psf(
+            psfs, features_extracted = extract_psf(
                 min_mass=self.widget.mass_slider.value()[0],
                 max_mass=self.widget.mass_slider.value()[1],
                 stack=self.widget.stack,
                 features=features,
                 wx=self.widget.wx, wy=self.widget.wy, wz=self.widget.wz,
-                pcc_min=self.value(),
-                usf=self.widget.usf
             )
 
-            self.set_features_label(features)
+            features_pcc = filter_pcc(
+                pcc_min=self.value(),
+                features=features_extracted,
+                psfs=psfs
+            )
+
+            self.set_features_label(features_pcc)
         except Exception as e:
             show_error(f"Error: {e}")
