@@ -10,7 +10,7 @@ from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QFileDialog, QHBox
 from napari_psf_extractor.components.pcc import PCCWidget
 from napari_psf_extractor.components.sliders import RangeSlider
 from napari_psf_extractor.components.statusbar import StatusMessage
-from napari_psf_extractor.extractor import extract_psf, filter_psf
+from napari_psf_extractor.extractor import extract_psf, localise_psf
 from napari_psf_extractor.features import Features
 from napari_psf_extractor.plotting import plot_psf
 from napari_psf_extractor.utils import normalize
@@ -98,6 +98,7 @@ class MainWidget(QWidget):
         self.stack = None
         self.mip = None
         self.psf_sum = None
+        self.features_pearson = None
 
         self.hide_all()
 
@@ -127,7 +128,7 @@ class MainWidget(QWidget):
         self.extract_button.clicked.connect(self.extract)
         self.find_features_button.clicked.connect(self.find_features)
 
-        self.pcc.changed.connect(lambda: self.save_button.setEnabled(False))
+        self.pcc.changed.connect(self.pcc_changed)
 
         self.viewer.layers.events.inserted.connect(param_setter.reset_choices)
         self.viewer.layers.events.removed.connect(param_setter.reset_choices)
@@ -158,6 +159,17 @@ class MainWidget(QWidget):
         self.wx = int(np.round(4 * dx_nm / psx))    # px
         self.wy = int(np.round(4 * dy_nm / psx))    # px
         self.wz = int(np.round(10 * dx_nm / psz))   # px
+
+    def pcc_changed(self):
+        """
+        This function is called when the PCC value is changed.
+        """
+        self.save_button.setEnabled(False)
+
+        if self.pcc.checkbox.isChecked():
+            self.extract_button.setEnabled(False)
+        else:
+            self.extract_button.setEnabled(True)
 
     def hide_all(self):
         """
@@ -207,20 +219,25 @@ class MainWidget(QWidget):
         This function is called when the "Extract" button is clicked.
         """
         try:
-            psfs, features_extracted = extract_psf(
-                min_mass=self.mass_slider.value()[0],
-                max_mass=self.mass_slider.value()[1],
-                stack=self.stack,
-                features=self.features.get_features(),
-                wx=self.wx, wy=self.wy, wz=self.wz,
-            )
+            # If PCC filtering is enabled, extract from the filtered features
+            if self.pcc.checkbox.isChecked():
+                psfs, features_extracted = psfe.extract_psfs(
+                    self.stack,
+                    features=self.features_pearson,
+                    shape=(self.wz, self.wy, self.wx)
+                )
+            else:
+                psfs, features_extracted = extract_psf(
+                    min_mass=self.mass_slider.value()[0],
+                    max_mass=self.mass_slider.value()[1],
+                    stack=self.stack,
+                    features=self.features.get_features(),
+                    wx=self.wx, wy=self.wy, wz=self.wz,
+                )
 
-            self.psf_sum, _ = filter_psf(
+            self.psf_sum = localise_psf(
                 psfs=psfs,
                 features_extracted=features_extracted,
-                stack=self.stack,
-                wx=self.wx, wy=self.wy, wz=self.wz,
-                pcc_min=self.pcc.value(),
                 usf=self.usf
             )
 

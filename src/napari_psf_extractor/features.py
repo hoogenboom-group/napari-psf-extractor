@@ -80,6 +80,10 @@ class Features:
         self.widget.status.stop_animation()
         self.lock.release()
 
+        # Guide user to first filter by PCC
+        if self.widget.pcc.checkbox != None and self.widget.pcc.checkbox.isChecked():
+            self.widget.extract_button.setEnabled(False)
+
         # Restart if mass range changed
         if curr_range != self.widget.mass_slider.value():
             self.update()

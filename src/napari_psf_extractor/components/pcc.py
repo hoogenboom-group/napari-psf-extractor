@@ -103,5 +103,7 @@ class PCCWidget(QWidget):
             )
 
             self.set_features_label(features_pcc)
+            self.widget.extract_button.setEnabled(True)
+            self.widget.features_pearson = features_pcc
         except Exception as e:
             show_error(f"Error: {e}")
