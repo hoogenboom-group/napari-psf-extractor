@@ -4,40 +4,31 @@
 [![PyPI](https://img.shields.io/pypi/v/napari-psf-extractor.svg?color=green)](https://pypi.org/project/napari-psf-extractor)
 [![Python Version](https://img.shields.io/pypi/pyversions/napari-psf-extractor.svg?color=green)](https://python.org)
 [![tests](https://github.com/hoogenboom-group/napari-psf-extractor/workflows/tests/badge.svg)](https://github.com/hoogenboom-group/napari-psf-extractor/actions)
-[![codecov](https://codecov.io/gh/hoogenboom-group/napari-psf-extractor/branch/main/graph/badge.svg)](https://codecov.io/gh/hoogenboom-group/napari-psf-extractor)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-psf-extractor)](https://napari-hub.org/plugins/napari-psf-extractor)
 
-A simple plugin to extract precise models of the Point Spread Functions of images
+<p align="center">
+  <b>A simple plugin to extract precise models of the Point Spread Functions of images</b>
+</p>
+
+![starting-widget.png](assets%2Fstarting-widget.png)
 
 ----------------------------------
-
-This [napari] plugin was generated with [Cookiecutter] using [@napari]'s [cookiecutter-napari-plugin] template.
-
-<!--
-Don't miss the full getting started guide to set up your new package:
-https://github.com/napari/cookiecutter-napari-plugin#getting-started
-
-and review the napari docs for plugin developers:
-https://napari.org/stable/plugins/index.html
--->
 
 ## Installation
 
 You can install `napari-psf-extractor` via [pip]:
-
-    pip install napari-psf-extractor
-
-
-
-To install latest development version :
-
-    pip install git+https://github.com/hoogenboom-group/napari-psf-extractor.git
+```
+pip install git+https://github.com/hoogenboom-group/PSF-Extractor@master
+pip install napari-psf-extractor
+```
 
 
 ## Contributing
 
 Contributions are very welcome. Tests can be run with [tox], please ensure
 the coverage at least stays the same before you submit a pull request.
+To provide a better understanding of the project's class structure, 
+refer to the [diagram](https://excalidraw.com/#json=OnNq6zdySLQLvsN3Qttyl,LyPUf_FpsP5EeG98t40fXA) linked here.
 
 ## License
 
@@ -47,6 +38,10 @@ Distributed under the terms of the [GNU GPL v3.0] license,
 ## Issues
 
 If you encounter any problems, please [file an issue] along with a detailed description.
+
+----------------------------------
+
+This [napari] plugin was generated with [Cookiecutter] using [@napari]'s [cookiecutter-napari-plugin] template.
 
 [napari]: https://github.com/napari/napari
 [Cookiecutter]: https://github.com/audreyr/cookiecutter
