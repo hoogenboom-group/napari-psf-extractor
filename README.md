@@ -16,12 +16,18 @@
 
 ## Installation
 
-You can install `napari-psf-extractor` via [pip]:
-```
+To install `napari-psf-extractor`, you can use [pip]. First, run the following command to install the PSF-Extractor dependency:
+
+```bash
 pip install git+https://github.com/hoogenboom-group/PSF-Extractor@master
+```
+
+Once the dependency is installed, proceed to install the napari-psf-extractor plugin:
+```bash
 pip install napari-psf-extractor
 ```
 
+Alternatively, you can also install the plugin directly through [napari-hub](https://www.napari-hub.org/plugins/napari-psf-extractor).
 
 ## Contributing
 
