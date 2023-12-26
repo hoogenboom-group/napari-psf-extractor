@@ -1,7 +1,46 @@
-[build-system]
-requires = ["setuptools>=42.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
+[project]
+name = "napari-psf-extractor"
+version = "1.0.2"
+description = "A simple plugin to extract precise models of the Point Spread Functions of images"
+authors = ["Alexandru Bolfa <me@alexbolfa.com>"]
+edition = "2021"
 
+[tool.poetry]
+name = "napari-psf-extractor"
+version = "1.0.2"
+description = "A simple plugin to extract precise models of the Point Spread Functions of images"
+authors = ["Alexandru Bolfa <me@alexbolfa.com>"]
+readme = "README.md"
+classifiers = [
+    "Framework :: napari"
+]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+numpy = "*"
+magicgui = "*"
+qtpy = "*"
+matplotlib = "*"
+trackpy = "*"
+superqt = "*"
+opencv-python = "*"
+
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dev-dependencies]
+tox = "*"
+pytest = "*"
+pytest-cov = "*"
+pytest-qt = "*"
+napari = "*"
+pyqt5 = "*"
+
+
+[tool.poetry.extras]
+testing = ["tox", "pytest", "pytest-cov", "pytest-qt", "napari", "pyqt5"]
 
 
 [tool.black]
